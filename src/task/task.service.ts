@@ -1,5 +1,5 @@
 import { HttpException, HttpStatus, Injectable, NotFoundException } from '@nestjs/common';
-import { TaskDto } from './task.dto';
+import { FindAllParameters, TaskDto } from './task.dto';
 import { identity } from 'rxjs';
 
 @Injectable()
@@ -17,8 +17,23 @@ export class TaskService {
         if(foundTask.length){
             return foundTask[0]
         } 
-
         throw new NotFoundException(`Task with id ${id} not found`)
+    }
+
+    findAll(params: FindAllParameters): TaskDto[] {
+        return this.tasks.filter(t => {
+            let match = true
+
+            if(params.title != undefined && !t.title.includes(params.title)){
+                match = false
+            }
+
+            if(params.status != undefined && t.status !== params.status){
+                match = false
+            }
+
+            return match
+        })
     }
 
     update(task: TaskDto){
@@ -28,7 +43,16 @@ export class TaskService {
             this.tasks[taskIndex] = task
             return
         }
-
         throw new HttpException(`Task with id ${task.id} not found`, HttpStatus.BAD_REQUEST)
+    }
+
+    remove(id: string){
+        let taskIndex = this.tasks.findIndex(t => t.id === id)
+
+        if(taskIndex >= 0){
+            this.tasks.splice(taskIndex, 1)
+            return
+        }
+        throw new HttpException(`Task with id ${id} not found`, HttpStatus.BAD_REQUEST)
     }
 }
