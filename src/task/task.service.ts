@@ -1,6 +1,5 @@
 import { HttpException, HttpStatus, Injectable, NotFoundException } from '@nestjs/common';
 import { FindAllParameters, TaskDto } from './task.dto';
-import { identity } from 'rxjs';
 
 @Injectable()
 export class TaskService {
