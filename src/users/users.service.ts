@@ -12,4 +12,9 @@ export class UsersService {
         newUser.password = bcryptHashSync(newUser.password, 10)
         this.users.push(newUser)
     }
+
+    findByUsername(username: string): UserDTo | undefined {
+      const usuario = this.users.find(user => user.username === username)
+      return usuario
+    }
 }
