@@ -1,5 +1,5 @@
 import { Body, Controller, Delete, Get, Param, Post, Put, Query, UseGuards } from '@nestjs/common';
-import { FindAllParameters, TaskDto } from './task.dto';
+import { CreateTaskDto, FindAllParameters, TaskDto } from './task.dto';
 import { TaskService } from './task.service';
 import { AuthGuard } from 'src/auth/auth.guard';
 
@@ -10,27 +10,28 @@ export class TaskController {
     constructor(private readonly taskService: TaskService){}
 
     @Post()
-    create(@Body() task: TaskDto){
+    async create(@Body() task: CreateTaskDto){
         this.taskService.create(task)
     }
 
     @Get('/:id')
-    findByID(@Param('id') id:string): TaskDto{
+    async findByID(@Param('id') id:number): Promise<TaskDto>{
         return this.taskService.findByID(id)
     }
 
     @Get()
-    findAll(@Query() params: FindAllParameters): TaskDto[] {
+    async findAll(@Query() params: FindAllParameters): Promise<TaskDto[]> {
         return this.taskService.findAll(params)
     }
 
     @Put()
-    update(@Body() task: TaskDto){
+    async update(@Body() task: TaskDto){
         this.taskService.update(task)
     }
 
     @Delete('/:id')
-    revome(@Param('id') id: string){
-        return this.taskService.remove(id)
+    async revome(@Param('id') id: string){
+        const numId = parseInt(id, 10)
+        return this.taskService.remove(numId)
     }
 }

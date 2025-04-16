@@ -1,4 +1,4 @@
-import { IsDateString, IsEnum, IsOptional, IsString, IsUUID, MaxLength, MinLength } from "class-validator"
+import { IsEnum, IsInt, IsOptional, IsString, MaxLength, MinLength } from "class-validator"
 
 export enum TaskStatusUnum {
     TO_DO = 'TO_DO',
@@ -6,10 +6,22 @@ export enum TaskStatusUnum {
     DONE = 'DONE'
 }
 
+export class CreateTaskDto{
+    @IsString()
+    @MinLength(3)
+    @MaxLength(256)
+    title: string
+
+    @IsString()
+    @MinLength(5)
+    @MaxLength(512)
+    description: string
+}
+
 export class TaskDto{
-    @IsUUID()
+    @IsInt()
     @IsOptional()
-    id: string
+    id: number
 
     @IsString()
     @MinLength(3)
@@ -23,10 +35,15 @@ export class TaskDto{
 
     @IsEnum(TaskStatusUnum)
     @IsOptional()
-    status: string
+    status: TaskStatusUnum
 
-    @IsDateString()
-    expirationDate: Date
+    constructor(id: number, title: string, description: string, status: string){
+        this.id = id
+        this.title = title
+        this.description = description
+        if (Object.values(TaskStatusUnum).includes(status as TaskStatusUnum))
+            this.status = status as TaskStatusUnum
+    }
 }
 
 export interface FindAllParameters {

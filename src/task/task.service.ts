@@ -1,60 +1,85 @@
 import { HttpException, HttpStatus, Injectable, NotFoundException } from '@nestjs/common';
-import { FindAllParameters, TaskDto, TaskStatusUnum } from './task.dto';
-import { v4 as uuid } from 'uuid';
+import { CreateTaskDto, FindAllParameters, TaskDto, TaskStatusUnum } from './task.dto';
+import { PrismaService } from 'src/prisma/prisma.service';
+import { Prisma, Task } from 'generated/prisma';
 
 @Injectable()
 export class TaskService {
 
-    private tasks: TaskDto[] = []
+    constructor(private prisma: PrismaService) { }
 
-    create(task: TaskDto){
-        task.id = uuid()
-        task.status = TaskStatusUnum.TO_DO
-        this.tasks.push(task)
-    }
-
-    findByID(id: string): TaskDto {
-        const foundTask = this.tasks.filter(t => t.id === id)
-        
-        if(foundTask.length){
-            return foundTask[0]
-        } 
-        throw new NotFoundException(`Task with id ${id} not found`)
-    }
-
-    findAll(params: FindAllParameters): TaskDto[] {
-        return this.tasks.filter(t => {
-            let match = true
-
-            if(params.title != undefined && !t.title.includes(params.title)){
-                match = false
+    async create(task: CreateTaskDto) {
+        return await this.prisma.task.create({
+            data: {
+                title: task.title,
+                description: task.description,
+                status: TaskStatusUnum.TO_DO
             }
-
-            if(params.status != undefined && t.status.includes(params.status)){
-                match = false
-            }
-
-            return match
         })
     }
 
-    update(task: TaskDto){
-        let taskIndex = this.tasks.findIndex(t => t.id === task.id)
-
-        if(taskIndex >= 0){
-            this.tasks[taskIndex] = task
-            return
-        }
-        throw new HttpException(`Task with id ${task.id} not found`, HttpStatus.BAD_REQUEST)
+    async findByID(id: number): Promise<TaskDto> {
+        const task = await this.prisma.task.findUnique({
+            where: {id},
+        })
+        if(!task)
+            throw new NotFoundException(`Task with id ${id} not found`)    
+        
+        return new TaskDto(task.id, task.title, task.description, task.status)
     }
 
-    remove(id: string){
-        let taskIndex = this.tasks.findIndex(t => t.id === id)
+    async findAll(params: FindAllParameters): Promise<TaskDto[]> {
 
-        if(taskIndex >= 0){
-            this.tasks.splice(taskIndex, 1)
-            return
+        const where: Prisma.TaskWhereInput = {};
+        const tarefas: TaskDto[] = []
+
+        if (params.title !== undefined) {
+            where.title = {
+                contains: params.title,
+                mode: 'insensitive', // opcional: busca sem case-sensitive
+            };
         }
-        throw new HttpException(`Task with id ${id} not found`, HttpStatus.BAD_REQUEST)
+
+        if (params.status !== undefined) {
+            where.status = params.status;
+        }
+
+        const tasks = await this.prisma.task.findMany({
+            where,
+        })
+
+        tasks.forEach(task => {
+            tarefas.push(new TaskDto(task.id, task.title, task.description, task.status))
+        })
+
+        return tarefas;
+    }
+
+
+    async update(task: TaskDto) {
+        const id = task.id
+        try{
+            await this.prisma.task.update({
+                where: {id},
+                data: {
+                    title: task.title,
+                    description: task.description,
+                    status: task.status,
+                    updatedAt: new Date()
+                }
+            })
+            return
+        } catch(error){
+            throw new HttpException(`Task with id ${id} not found`, HttpStatus.BAD_REQUEST)
+        }
+    }
+
+    async remove(id: number) {
+        try{
+            await this.prisma.task.delete({where: {id}})
+            return
+        }catch(error){
+            throw new HttpException(`Task with id ${id} not found`, HttpStatus.BAD_REQUEST)
+        }
     }
 }
